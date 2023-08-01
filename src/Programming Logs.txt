@@ -1,0 +1,58 @@
+Programming Logs
+*********************************************************
+Jun 13 2023
+
+Starting project today.
+
+We can run a topological sort on the graph based on prerequisite requirements and then prioritizes courses with the same in-degree based on graduation requirements. Under the assumption that courses satisfying the same requirement tend to be similar and that students wish to mix up their schedule, the less a requirement has been met, the higher the priority for courses that satisfy this requirement.
+
+However, storing a graph in an SQL database seems like a lot of work. On the other hand, I can't just scrape WebSTAC every single time.
+
+In addition, I have to figuer out how to scrape WebSTAC.
+
+Optional Functionality:
+-recommends courses based on past course selections. Course attributes and possibly performance will be taken into account.
+
+*********************************************************
+Jun 14 2023
+
+Created bunch of classes today. Was wondering if I can omit Edges because they are implied in Vertices anyway, but will have to wait to see if that's a good idea. Probably not.
+
+Game Plan: Topological Sort won't work because it would just produce a viable plan for taking ALL classes, which no one plans to do (and simply removing courses from the mix would likely cause prerequisites to be missed---topological sort only cares that if a course is a prerequisite, it comes first, but it doesn't check if all prerequisites are met). Instead, we work down from high level courses.
+
+First, we add mandatory courses to the mix, then iteratively add all prerequisites that lead up to those courses (for example, CSE 347 would lead to CSE 247, which in turn leads to CSE 131).
+
+Then, we work upwards from the courses already in the mix and choose courses that are available until graduation requirements are met. (If no System credits, then add systems course)
+
+Optional Functionality:
+-ask students to submit courses they would like to take, in order of priority, and add them as mandatory courses. Then follow the same procedure of working from the bottom up adding available courses until requirements are met.
+-ask student which prerequisite path they would like to take.
+
+Other option:
+Iterate through the list of requirements. For each one, present a list of courses that could satisfy the requirements. The student can then choose one and it will be added with mandatory courses.
+
+*********************************************************
+Jun 17 2023
+
+Coded up the add with all prerequisites method.
+
+I just realized that since there are multiple paths to a single course, perhaps it's not the best idea to add them one by one. We could implement a method that allows for all desired and mandatory courses while keeping the number of prerequisites at a minimum. In other words, I need a multiple soure, multiple destination, shortest path algorithm. Actually, maybe not even that, because many courses require multiuple prerequisites. Need to read up some literature if I want to write it this way.
+
+*********************************************************
+Jul 17 2023
+
+Program succesfully queried database hosted locally on PHPMyAdmin. Several courses were added as simple test cases. Planner successfully generated course mix for "CSE 247" (single path from top to bottom) and "CSE 417T" (two prerequisite paths).
+
+Redesigned the collection of all courses to use a hash map instead of a hash set, enabling look-up by course ID. To easily load courses following from a course (opensUp, which is required for systematically decrementing remaining prerequisite count in TopoSort), I should probably save that in the database as well.
+
+Things to work on:
+1. adding courses to database from the program instead of typing commands in PHPMyAdmin. (Need to ensure that all courses added also have their prerequisites added, otherwise program will crash).
+2. dealing with different possible prerequisite paths and corequisites. For current development purposes, it suffices that the program can parse the "or" relationship in prerequisite decription strings. The path actually chosen can be determined either based on courses already in the course mix, or randomly chosen. As for corequisites, that can wait until we are developing semester plans (maybe bind the two courses as a pair? But most corequisites can also be taken as prerequisites).
+3. TopoSort, which, in itself isn't hard, but I need to keep the remaining prerequisites count, which means I need to be able to know what courses a course is the prerequisite for.
+
+*********************************************************
+Jul 21 2023
+
+I decided to add postrequisites to the database, which, while it does complicate the course insertion process, seems to be the best way for facilitating the update of prerequisites count in TopoSort. This also involved some tweaks to the Vertex and other classes.
+
+I also wrote the HashMap for maintaining prerequisite count in the TopoSort class. The rest of TopoSort should be pretty straightforward.
